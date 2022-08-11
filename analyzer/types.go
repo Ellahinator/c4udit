@@ -2,6 +2,7 @@ package analyzer
 
 import (
 	"fmt"
+	"regexp"
 	"strings"
 )
 
@@ -17,11 +18,12 @@ type Report struct {
 // Issue represents an Issue to search for in the codebase.
 // The pattern field is a RegEx string which must compile.
 type Issue struct {
-	Identifier string
-	Severity   Severity
-	Title      string
-	Link       string
-	Pattern    string
+	Identifier     string
+	Severity       Severity
+	Title          string
+	Impact         string
+	Pattern        string
+	Recommendation string
 }
 
 // Finding represents a possible Issue found in the codebase.
@@ -42,21 +44,64 @@ const (
 	LOW
 )
 
+func slugify(s string) string {
+	droppedChars := []string{
+		"\"", "'", "`", ".", "/",
+		"!", ",", "~", "&",
+		"%", "^", "*", "#",
+		"@", "|",
+		"(", ")",
+		"{", "}",
+		"[", "]", "<", ">", "++", "==", "+", "=",
+	}
+
+	s = strings.ToLower(s)
+	// output still is L01, need to add dash so its L-01
+	for _, c := range droppedChars {
+		s = strings.Replace(s, c, "", -1)
+	}
+
+	s = strings.Replace(s, " ", "-", -1)
+
+	// fmt.Println("--------------------------------")
+	// fmt.Println(s)
+
+	// s = strings.Replace(s, "--", "-", -1)
+	m1 := regexp.MustCompile(`[a-z]-[0-9][0-9]--`)
+	m2 := regexp.MustCompile(`[a-z]-[0-9][0-9]`)
+	num := m2.Find([]byte(s))
+	// fmt.Println(num)
+	s = m1.ReplaceAllString(s, string(num)+"-")
+	// fmt.Println(s)
+
+	// fmt.Println("--------------------------------")
+
+	return s
+}
+
+func createLink(identifier string, title string) string {
+	link := fmt.Sprintf("#%s -%s", identifier, title)
+	link = slugify(link)
+	return "#" + link
+}
+
 // Markdown returns the report as string in markdown style.
-func (r Report) Markdown() string {
-	const c4uditRepoLink = "https://github.com/byterocket/c4udit"
+func (r Report) Markdown(toc bool) string {
 	// Issue output in Code4Rena format:
 	// ### {{ issue.Title }}
 	//
 	// #### Impact
-	// Issue information: [{{ issue.Identifier }}]({{ issue.Link }})
+	// Issue information: [{{ issue.Identifier }}]({{ issue.Impact }})
 	//
 	// #### Findings
 	// {{ _, finding := range findings: finding.String() }}
 	//
-	// #### Tools used
-	// [c4udit]({{ c4uditRepoLink }})
+	// #### Recommendation
+	// {{issue.Recommendation}}
 	//
+	// #### Tools used
+	//
+
 	buf := strings.Builder{}
 
 	buf.WriteString("# c4udit Report\n")
@@ -66,38 +111,204 @@ func (r Report) Markdown() string {
 	for _, f := range r.FilesAnalyzed {
 		buf.WriteString("- " + f + "\n")
 	}
-	buf.WriteString("\n")
 
-	buf.WriteString("## Issues found\n")
+	//low and Non-Critical
+	//links
+
+	//low
+	if toc {
+		buf.WriteString("# Table of Contents \n")
+
+		canWriteLowTitle := true
+		for _, issue := range r.Issues {
+
+			findings := r.FindingsPerIssue[issue.Identifier]
+			if len(findings) == 0 {
+				continue
+			}
+			if issue.Severity == LOW {
+				if canWriteLowTitle {
+					buf.WriteString("Low\n")
+				}
+				link := createLink(issue.Identifier, issue.Title)
+				buf.WriteString("- [[" + issue.Identifier + "] " + issue.Title + "](" + link + ")\n")
+				canWriteLowTitle = false
+			} else {
+				continue
+			}
+
+		}
+
+		//Nc
+		canWriteNctitle := true
+		for _, issue := range r.Issues {
+
+			findings := r.FindingsPerIssue[issue.Identifier]
+			if len(findings) == 0 {
+				continue
+			}
+			if issue.Severity == NC {
+				if canWriteNctitle {
+					buf.WriteString("\nNon-Critical\n")
+				}
+				link := createLink(issue.Identifier, issue.Title)
+				buf.WriteString("- [[" + issue.Identifier + "] " + issue.Title + "](" + link + ")\n")
+				canWriteNctitle = false
+			} else {
+				continue
+			}
+
+		}
+
+		buf.WriteString("\n")
+
+	}
+	buf.WriteString("## QA Issues found\n")
+	buf.WriteString("\n")
+	//list  low and nc
+	buf.WriteString("## Low Findings\n")
 	buf.WriteString("\n")
 	for _, issue := range r.Issues {
 		findings := r.FindingsPerIssue[issue.Identifier]
 		if len(findings) == 0 {
 			continue
 		}
+		if issue.Severity == GASOP {
+			continue
+		}
 
-		buf.WriteString("### " + issue.Title + "\n")
-		buf.WriteString("\n")
+		if issue.Severity == NC {
+			continue
+		}
+
+		buf.WriteString("### [" + issue.Identifier + "] " + issue.Title + "\n")
 
 		// Impact
-		buf.WriteString("#### Impact\n")
-		buf.WriteString("Issue Information: [" + issue.Identifier + "]" + "(" + issue.Link + ")" + "\n")
-		buf.WriteString("\n")
+		// if issue.Severity == NC {
+		if issue.Impact != "" {
+			buf.WriteString("#### Impact\n")
+			buf.WriteString(issue.Impact + "\n")
+		}
 
 		// Findings
 		buf.WriteString("#### Findings:\n")
-		buf.WriteString("```\n")
+		buf.WriteString("```solidity\n")
 		for _, finding := range findings {
 			buf.WriteString(finding.String())
 		}
 		buf.WriteString("```\n")
 
-		// Tools used
-		buf.WriteString("#### Tools used\n")
-		buf.WriteString("[c4udit](" + c4uditRepoLink + ")\n")
+		// Recommendation
+		buf.WriteString("#### Recommendation\n")
+		buf.WriteString(issue.Recommendation + "\n")
+		buf.WriteString("\n")
+	}
+
+	buf.WriteString("## Non-Critical Findings\n")
+	buf.WriteString("\n")
+	for _, issue := range r.Issues {
+		findings := r.FindingsPerIssue[issue.Identifier]
+		if len(findings) == 0 {
+			continue
+		}
+		if issue.Severity == GASOP {
+			continue
+		}
+
+		if issue.Severity == LOW {
+			continue
+		}
+
+		buf.WriteString("### [" + issue.Identifier + "] " + issue.Title + "\n")
+
+		// Impact
+		// if issue.Severity == NC {
+		if issue.Impact != "" {
+			buf.WriteString("#### Impact\n")
+			buf.WriteString(issue.Impact + "\n")
+		}
+
+		// Findings
+		buf.WriteString("#### Findings:\n")
+		buf.WriteString("```solidity\n")
+		for _, finding := range findings {
+			buf.WriteString(finding.String())
+		}
+		buf.WriteString("```\n")
+
+		// Recommendation
+		buf.WriteString("#### Recommendation\n")
+		buf.WriteString(issue.Recommendation + "\n")
+		buf.WriteString("\n")
+	}
+
+	///gas
+
+	if toc {
+
+		buf.WriteString("# Table of Contents \n")
+
+		canWriteGasTitle := true
+		for _, issue := range r.Issues {
+
+			findings := r.FindingsPerIssue[issue.Identifier]
+			if len(findings) == 0 {
+				continue
+			}
+			if issue.Severity == GASOP {
+				if canWriteGasTitle {
+					buf.WriteString("Gas\n")
+				}
+				link := createLink(issue.Identifier, issue.Title)
+				buf.WriteString("- [[" + issue.Identifier + "] " + issue.Title + "](" + link + ")\n")
+				canWriteGasTitle = false
+			} else {
+				continue
+			}
+
+		}
 
 		buf.WriteString("\n")
 	}
+
+	buf.WriteString("## Gas Findings\n")
+	buf.WriteString("\n")
+	//list  gas
+	for _, issue := range r.Issues {
+		findings := r.FindingsPerIssue[issue.Identifier]
+		if len(findings) == 0 {
+			continue
+		}
+		if issue.Severity != GASOP {
+			continue
+		}
+
+		buf.WriteString("### [" + issue.Identifier + "] " + issue.Title + "\n")
+
+		// Impact
+		if issue.Impact != "" {
+			buf.WriteString("#### Impact\n")
+			buf.WriteString(issue.Impact + "\n")
+		}
+		// Findings
+		buf.WriteString("#### Findings:\n")
+		buf.WriteString("```solidity\n")
+		for _, finding := range findings {
+			buf.WriteString(finding.String())
+		}
+		buf.WriteString("```\n")
+
+		// Recommendation
+		buf.WriteString("#### Recommendation\n")
+		buf.WriteString(issue.Recommendation + "\n")
+		buf.WriteString("\n")
+	}
+
+	// Tools used
+	buf.WriteString("#### Tools used\n")
+	buf.WriteString("manual, c4udit, slither" + "\n")
+
+	buf.WriteString("\n")
 
 	return buf.String()
 }

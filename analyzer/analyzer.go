@@ -89,9 +89,10 @@ func analyzeFile(issues []Issue, file string) (map[string][]Finding, error) {
 		for _, issue := range issues {
 			matched, _ := regexp.MatchString(issue.Pattern, line)
 			if matched {
+				// fmt.Println(">>>", strings.Split(file, "/")[len(strings.Split(file, "/"))-1])
 				findings[issue.Identifier] = append(findings[issue.Identifier], Finding{
 					IssueIdentifier: issue.Identifier,
-					File:            file,
+					File:            strings.Split(file, "/")[len(strings.Split(file, "/"))-1],
 					LineNumber:      lineNumber,
 					LineContent:     strings.TrimSpace(line),
 				})

@@ -33,16 +33,40 @@ func main() {
 		// Save report in markdown format to file.
 		err = ioutil.WriteFile(
 			"c4udit-report.md",
-			[]byte(report.Markdown()),
+			[]byte(report.Markdown(false)),
 			0777,
 		)
 		if err != nil {
 			printErrorAndExit(err)
 		}
-	} else {
-		// Print report to stdout.
-		fmt.Println(report.String())
 	}
+	//  else {
+	// 	// Print report to stdout.
+	// 	fmt.Println(report.String())
+
+	// }
+
+	if *toc {
+		// Save report in markdown format to file.
+		// fmt.Println(flag.Args()[0])
+		str, err1 := analyzer.ToC_Convertor(flag.Args()[0])
+		if err1 != nil {
+			printErrorAndExit(err1)
+		}
+		err = ioutil.WriteFile(
+			"c4udit-report-toc.md",
+			[]byte(str),
+			0777,
+		)
+		if err != nil {
+			printErrorAndExit(err)
+		}
+
+	}
+	//  else {
+	// 	// Print report to stdout.
+	// 	fmt.Println(report.String())
+	// }
 
 }
 
@@ -50,6 +74,7 @@ func main() {
 var (
 	help       = flag.Bool("h", false, "Print help text.")
 	saveToFile = flag.Bool("s", false, "Save report as file.")
+	toc        = flag.Bool("t", false, "Save Report as file with Toc")
 )
 
 const helpText = `c4udit is a static analyzer for solidity contracts based on regexs.
@@ -66,6 +91,7 @@ Usage:
 Flags:
 	-h    Print help text.
 	-s    Save report as file.
+	-t    Save report as file with Toc ex: -t <file name>.md
 
 References:
 	[1]    https://github.com/byterocket/c4-common-issues
