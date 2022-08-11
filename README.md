@@ -21,7 +21,7 @@ $ go install github.com/byterocket/c4udit@latest
 
 To just build the binary:
 ```
-$ git clone https://github.com/byterocket/c4udit
+$ git clone https://github.com/Ellahinator/c4udit.git
 $ cd c4udit/
 $ go build .
 ```
@@ -39,41 +39,12 @@ Usage:
 Flags:
 	-h    Print help text.
 	-s    Save report as file.
+	-t    Add ToC to file.
 ```
 
 ## Example
 
-Running `c4udit` against the `examples` directory:
+Running `c4udit` against dummy.sol:
 ```
-$ ./c4udit examples/
-Files analyzed:
-- examples/Test.sol
-
-Issues found:
- G001:
-  examples/Test.sol::4 => uint256 a = 0;
-  examples/Test.sol::12 => for (uint256 i = 0; i < array.length; i++) {
-
- G002:
-  examples/Test.sol::12 => for (uint256 i = 0; i < array.length; i++) {
-
- G007:
-  examples/Test.sol::6 => string b = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
-
- G008:
-  examples/Test.sol::13 => i = i / 2;
-
- L001:
-  examples/Test.sol::16 => token.transferFrom(msg.sender, address(this), 100);
-
- L003:
-  examples/Test.sol::1 => pragma solidity ^0.8.0;
-```
-
-Using the `-s` flag, `c4udit` will create a report in markdown format.
-For an example check out the report in the `examples` directory [here](./examples/c4udit-report.md).
-
-
-## License
-
-Note that this tool is licensed as [free software](./LICENSE)!
+$ ./c4udit -s dummy.sol
+$ ./c4udit -t c4udit-report.md
