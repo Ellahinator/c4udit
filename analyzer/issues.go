@@ -73,7 +73,7 @@ func GasOpIssues() []Issue {
 			"Use Shift Right/Left instead of Division/Multiplication if possible",
 			"A division/multiplication by any number `x` being a power of 2 can be calculated by shifting `log2(x)` to the right/left. While the `DIV` opcode uses 5 gas, the `SHR` opcode only uses 3 gas. Furthermore, Solidity's division operation also includes a division-by-0 prevention which is bypassed using shifting.",
 			`(/[2,4,8]|/ [2,4,8]|\*[2,4,8]|\* [2,4,8])`,
-			"Use SHR/SHL.\nBad\n```solidity\nuint256 b = a / 2\nuint256 c = a / 4;\nuint256 d = a * 8;\n```\nGood\n```solidity\nuint256 b = a >> 1;\nuint256 c = a >> 2;\nuint256 d = a << 3;\n```",
+			"Use SHR/SHL.\nBad\n```solidity\nuint256 b = a / 2;\nuint256 c = a / 4;\nuint256 d = a * 8;\n```\nGood\n```solidity\nuint256 b = a >> 1;\nuint256 c = a >> 2;\nuint256 d = a << 3;\n```",
 		},
 		// G-08 - Contracts using unlocked pragma.
 		{
@@ -216,10 +216,10 @@ func NonCriticalIssues() []Issue {
 		{
 			"N-02",
 			NC,
-			"Declare uint as uint256",
+			"Declare `uint` as `uint256`",
 			"",
-			`uint `,
-			"To favor explicitness, all instances of uint should be declared as uint256.",
+			` uint | int `,
+			"To favor explicitness, all instances of `uint`/`int` should be declared as `uint256`/`int256`.",
 		},
 	}
 }

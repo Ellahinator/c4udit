@@ -333,7 +333,7 @@ func (r Report) String() string {
 		}
 
 		// Add findings per issue
-		issues += " " + issue.Identifier + ":\n"
+		issues += "[" + issue.Identifier + "] " + issue.Title + ":\n"
 		for _, finding := range findings {
 			issues += "  " + finding.String()
 		}
