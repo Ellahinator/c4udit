@@ -47,4 +47,4 @@ Flags:
 Running `c4udit` against dummy.sol:
 ```
 $ ./c4udit -s dummy.sol
-$ ./c4udit -t c4udit-report.md
+$ ./c4udit -t
