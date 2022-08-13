@@ -16,7 +16,7 @@ func main() {
 	}
 
 	// Expect at least one user argument.
-	if len(flag.Args()) == 0 {
+	if len(flag.Args()) == 0 && !*toc{
 		printHelpAndExit()
 	}
 
@@ -39,17 +39,11 @@ func main() {
 		if err != nil {
 			printErrorAndExit(err)
 		}
-	}
-	//  else {
-	// 	// Print report to stdout.
-	// 	fmt.Println(report.String())
-
-	// }
-
-	if *toc {
+	} else if *toc {
 		// Save report in markdown format to file.
 		// fmt.Println(flag.Args()[0])
-		str, err1 := analyzer.ToC_Convertor(flag.Args()[0])
+		// str, err1 := analyzer.ToC_Convertor(flag.Args()[0])
+		str, err1 := analyzer.ToC_Convertor("c4udit-report.md")
 		if err1 != nil {
 			printErrorAndExit(err1)
 		}
@@ -62,11 +56,11 @@ func main() {
 			printErrorAndExit(err)
 		}
 
+	} else {
+		// Print report to stdout.
+		fmt.Println(report.String())
+
 	}
-	//  else {
-	// 	// Print report to stdout.
-	// 	fmt.Println(report.String())
-	// }
 
 }
 
@@ -91,13 +85,8 @@ Usage:
 Flags:
 	-h    Print help text.
 	-s    Save report as file.
-	-t    Save report as file with Toc ex: -t <file name>.md
+	-t    Save report as file with Toc ex: ./c4udit -t
 
-References:
-	[1]    https://github.com/byterocket/c4-common-issues
-
-
-Provided with ❤ by ByteRocket
 `
 
 func printHelpAndExit() {
